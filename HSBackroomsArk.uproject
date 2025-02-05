@@ -1,0 +1,13 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "{5DDDFB18-46B6-41CB-5376-4DA6C54E187E}",
+	"Category": "",
+	"Description": "",
+	"Modules": [
+		{
+			"Name": "HSBackroomsArk",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
+}
