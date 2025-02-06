@@ -7,7 +7,10 @@
 		{
 			"Name": "HSBackroomsArk",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine"
+			]
 		}
 	]
 }
