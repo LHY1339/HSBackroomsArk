@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "MainCharacter.generated.h"
 
+class AMainGameStateBase;
 class USkeletalMeshComponent;
 class UCameraComponent;
 class USpringArmComponent;
@@ -23,13 +24,27 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
-	// Called every frame
+public:
+	//override
 	virtual void Tick(float DeltaTime) override;
-
-	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+
+public:
+	//Axis
+	void AxisMoveForward(float Value);
+	void AxisMoveRight(float Value);
+	void AxisLookUp(float Value);
+	void AxisLookRight(float Value);
 	
+private:
+	//Init
+	void __InitComponent();
+
+	//Tick
+	void __GetServerDeltaTime();
+	void __SmoothPlayerTransform();
+
 public:
 	UPROPERTY(EditDefaultsOnly)
 	USkeletalMeshComponent* SK_First;
@@ -42,8 +57,12 @@ public:
 	
 	UPROPERTY(EditDefaultsOnly)
 	UCameraComponent* CAM_First;
-	
+
+	UPROPERTY(Replicated)
+	FVector PlayerLocation;
+
 private:
-	//Init
-	void __InitComponent();
+	float ServerDeltaTime;
+
+	AMainGameStateBase* GameState;
 };

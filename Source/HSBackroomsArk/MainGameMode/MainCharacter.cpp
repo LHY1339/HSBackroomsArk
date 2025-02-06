@@ -3,9 +3,12 @@
 
 #include "MainCharacter.h"
 
+#include "MainGameStateBase.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 AMainCharacter::AMainCharacter()
@@ -24,6 +27,15 @@ void AMainCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (IsLocallyControlled())
+	{
+		
+	}
+	else
+	{
+		__GetServerDeltaTime();
+		__SmoothPlayerTransform();
+	}
 }
 
 // Called to bind functionality to input
@@ -31,6 +43,48 @@ void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+	PlayerInputComponent->BindAxis("MoveForward", this, &AMainCharacter::AxisMoveForward);
+	PlayerInputComponent->BindAxis("MoveRight", this, &AMainCharacter::AxisMoveRight);
+	PlayerInputComponent->BindAxis("LookUp", this, &AMainCharacter::AxisLookUp);
+	PlayerInputComponent->BindAxis("LookRight", this, &AMainCharacter::AxisLookRight);
+}
+
+void AMainCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AMainCharacter,PlayerLocation);
+}
+
+void AMainCharacter::AxisMoveForward(float Value)
+{
+	if (Value==0)
+	{
+		return;
+	}
+}
+
+void AMainCharacter::AxisMoveRight(float Value)
+{
+	if (Value==0)
+	{
+		return;
+	}
+}
+
+void AMainCharacter::AxisLookUp(float Value)
+{
+	if (Value==0)
+	{
+		return;
+	}
+}
+
+void AMainCharacter::AxisLookRight(float Value)
+{
+	if (Value==0)
+	{
+		return;
+	}
 }
 
 void AMainCharacter::__InitComponent()
@@ -46,5 +100,19 @@ void AMainCharacter::__InitComponent()
 	
 	CAM_First=CreateDefaultSubobject<UCameraComponent>("CAM_First");
 	CAM_First->SetupAttachment(SPR_First);
+}
+
+void AMainCharacter::__GetServerDeltaTime()
+{
+	if (!GameState)
+	{
+		GameState=Cast<AMainGameStateBase>(UGameplayStatics::GetGameState(GetWorld()));
+	}
+	ServerDeltaTime=GameState->ServerDeltaTime;
+}
+
+void AMainCharacter::__SmoothPlayerTransform()
+{
+	
 }
 

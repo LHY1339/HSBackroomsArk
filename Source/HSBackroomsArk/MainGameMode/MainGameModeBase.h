@@ -18,9 +18,7 @@ public:
 
 public:
 	virtual void Tick(float DeltaSeconds) override;
-	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
-	UPROPERTY(Replicated)
 	float ServerDeltaTime=0.0f;
 };
