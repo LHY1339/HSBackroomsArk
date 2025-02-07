@@ -6,11 +6,17 @@
 #include "MainGameStateBase.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Camera/CameraComponent.h"
+#include "Components/BoxComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "HSBackroomsArk/Interface/IDetail.h"
+#include "HSBackroomsArk/Interface/IInteract.h"
+#include "HSBackroomsArk/Interface/IRPC.h"
+#include "HSBackroomsArk/Interface/IView.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
+#include "Widget/UW_Main.h"
 
 // Sets default values
 AMainCharacter::AMainCharacter()
@@ -22,7 +28,8 @@ AMainCharacter::AMainCharacter()
 void AMainCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	__BeginBindEvent();
+	__BeginWidget();
 }
 
 void AMainCharacter::Tick(float DeltaTime)
@@ -56,6 +63,8 @@ void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAction("Run",IE_Released,this,&AMainCharacter::ActionRunRelease);
 	PlayerInputComponent->BindAction("Jump",IE_Pressed,this,&AMainCharacter::ActionJumpPress);
 	PlayerInputComponent->BindAction("Jump",IE_Released,this,&AMainCharacter::ActionJumpRelease);
+	PlayerInputComponent->BindAction("Interact",IE_Pressed,this,&AMainCharacter::ActionInteractPress);
+	PlayerInputComponent->BindAction("Interact",IE_Released,this,&AMainCharacter::ActionInteractRelease);
 }
 
 void AMainCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -127,6 +136,24 @@ void AMainCharacter::ActionJumpRelease()
 	StopJumping();
 }
 
+void AMainCharacter::ActionInteractPress()
+{
+	if (DetailActorList.Num()<=0)
+	{
+		return;
+	}
+	Interact(DetailActorList.Last());
+}
+
+void AMainCharacter::ActionInteractRelease()
+{
+	if (DetailActorList.Num()<=0)
+	{
+		return;
+	}
+	NotInteract(DetailActorList.Last());
+}
+
 void AMainCharacter::UpdateVariable_Server_Implementation(float newSpeed, float newDirection, float newPitch,
                                                           float newYaw,FVector newPlayerLocation,FRotator newPlayerRotation)
 {
@@ -168,6 +195,64 @@ void AMainCharacter::OnRep_PlayerRotation()
 	LerpRotation = UKismetMathLibrary::Abs((1.0f / ServerDeltaTime) * Distance);
 }
 
+void AMainCharacter::BOX_ViewBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	IIView* Interface=Cast<IIView>(OtherActor);
+	if (Interface)
+	{
+		Interface->Execute_OnView(OtherActor,this);
+	}
+}
+
+void AMainCharacter::BOX_ViewEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex)
+{
+	IIView* Interface=Cast<IIView>(OtherActor);
+	if (Interface)
+	{
+		Interface->Execute_OnNotView(OtherActor,this);
+	}
+}
+
+void AMainCharacter::BOX_DetailBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	IIDetail* Interface=Cast<IIDetail>(OtherActor);
+	if (Interface)
+	{
+		Interface->Execute_OnShowDetail(OtherActor,this);
+	}
+}
+
+void AMainCharacter::BOX_DetailEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComponent, int32 OtherBodyIndex)
+{
+	IIDetail* Interface=Cast<IIDetail>(OtherActor);
+	if (Interface)
+	{
+		Interface->Execute_OnNotShowDetail(OtherActor,this);
+	}
+}
+
+void AMainCharacter::RunServer_Implementation(AActor* RunActor,int Function)
+{
+	IIRPC* Interface=Cast<IIRPC>(RunActor);
+	if (Interface)
+	{
+		Interface->Execute_OnRunServer(RunActor,this,Function);
+	}
+}
+
+void AMainCharacter::RunServerReliable_Implementation(AActor* RunActor,int Function)
+{
+	IIRPC* Interface=Cast<IIRPC>(RunActor);
+	if (Interface)
+	{
+		Interface->Execute_OnRunServerReliable(RunActor,this,Function);
+	}
+}
+
 void AMainCharacter::SetMaxWalkSpeed(float Value)
 {
 	GetCharacterMovement()->MaxWalkSpeed=Value;
@@ -183,6 +268,24 @@ float AMainCharacter::RoundDelta(float A, float B,float RoundHalf)
 	return value;
 }
 
+void AMainCharacter::Interact(AActor* InteractActor)
+{
+	IIInteract* Interface=Cast<IIInteract>(InteractActor);
+	if (Interface)
+	{
+		Interface->Execute_OnInteract(InteractActor,this);
+	}
+}
+
+void AMainCharacter::NotInteract(AActor* InteractActor)
+{
+	IIInteract* Interface=Cast<IIInteract>(InteractActor);
+	if (Interface)
+	{
+		Interface->Execute_OnNotInteract(InteractActor,this);
+	}
+}
+
 void AMainCharacter::__InitComponent()
 {
 	SK_First=CreateDefaultSubobject<USkeletalMeshComponent>("SK_First");
@@ -196,6 +299,12 @@ void AMainCharacter::__InitComponent()
 	
 	CAM_First=CreateDefaultSubobject<UCameraComponent>("CAM_First");
 	CAM_First->SetupAttachment(SPR_First);
+
+	BOX_View=CreateDefaultSubobject<UBoxComponent>("BOX_View");
+	BOX_View->SetupAttachment(RootComponent);
+
+	BOX_Detail=CreateDefaultSubobject<UBoxComponent>("BOX_Detail");
+	BOX_Detail->SetupAttachment(RootComponent);
 }
 
 void AMainCharacter::__GetServerDeltaTime()
@@ -238,7 +347,7 @@ void AMainCharacter::__SmoothPlayerTransform()
 
 void AMainCharacter::__CalculateVariable()
 {
-	Speed=GetVelocity().Size();
+	Speed=GetVelocity().Size2D();
 	Direction=SK_First->GetAnimInstance()->CalculateDirection(GetVelocity(),GetActorRotation());
 	FRotator _delta_=UKismetMathLibrary::NormalizedDeltaRotator(GetControlRotation(),GetActorRotation());
 	Pitch=_delta_.Pitch;
@@ -260,5 +369,27 @@ void AMainCharacter::__SmoothCameraFOV()
 		return;
 	}
 	CAM_First->SetFieldOfView(CUR_FOV->GetFloatValue(Speed));
+}
+
+void AMainCharacter::__BeginWidget()
+{
+	if (!IsLocallyControlled() || !MainWidgetClass)
+	{
+		return;
+	}
+	MainWidget = CreateWidget<UUW_Main>(GetWorld(), MainWidgetClass);
+	if (MainWidget)
+	{
+		MainWidget->AddToViewport(1);
+		MainWidget->Character = this;
+	}
+}
+
+void AMainCharacter::__BeginBindEvent()
+{
+	BOX_View->OnComponentBeginOverlap.AddDynamic(this,&AMainCharacter::BOX_ViewBeginOverlap);
+	BOX_View->OnComponentEndOverlap.AddDynamic(this,&AMainCharacter::BOX_ViewEndOverlap);
+	BOX_Detail->OnComponentBeginOverlap.AddDynamic(this,&AMainCharacter::BOX_DetailBeginOverlap);
+	BOX_Detail->OnComponentEndOverlap.AddDynamic(this,&AMainCharacter::BOX_DetailEndOverlap);
 }
 

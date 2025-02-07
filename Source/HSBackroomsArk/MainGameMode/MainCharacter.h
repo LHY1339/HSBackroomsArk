@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "MainCharacter.generated.h"
 
+class UUW_Main;
+class UBoxComponent;
 class AMainGameStateBase;
 class USkeletalMeshComponent;
 class UCameraComponent;
@@ -28,7 +30,7 @@ public:
 	//override
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
 	//Axis
@@ -42,9 +44,11 @@ public:
 	void ActionRunRelease();
 	void ActionJumpPress();
 	void ActionJumpRelease();
-
+	void ActionInteractPress();
+	void ActionInteractRelease();
+	
 public:
-	//RPC
+	//UFUNCTION
 	UFUNCTION(Server,Unreliable)
 	void UpdateVariable_Server(float newSpeed,float newDirection,float newPitch,float newYaw,FVector newPlayerLocation,FRotator newPlayerRotation);
 
@@ -54,10 +58,54 @@ public:
 	UFUNCTION()
 	void OnRep_PlayerRotation();
 
+	UFUNCTION()
+	void BOX_ViewBeginOverlap(
+			UPrimitiveComponent* OverlappedComponent,
+			AActor* OtherActor,
+			UPrimitiveComponent* OtherComponent,
+			int32 OtherBodyIndex,
+			bool bFromSweep,
+			const FHitResult& SweepResult
+		);
+
+	UFUNCTION()
+	void BOX_ViewEndOverlap(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComponent,
+		int32 OtherBodyIndex
+		);
+
+	UFUNCTION()
+	void BOX_DetailBeginOverlap(
+			UPrimitiveComponent* OverlappedComponent,
+			AActor* OtherActor,
+			UPrimitiveComponent* OtherComponent,
+			int32 OtherBodyIndex,
+			bool bFromSweep,
+			const FHitResult& SweepResult
+		);
+
+	UFUNCTION()
+	void BOX_DetailEndOverlap(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComponent,
+		int32 OtherBodyIndex
+		);
+
+	UFUNCTION(Server,Unreliable)
+	void RunServer(AActor* RunActor,int Function);
+
+	UFUNCTION(Server,Reliable)
+	void RunServerReliable(AActor* RunActor,int Function);
+
 public:
 	//CallForOther
 	void SetMaxWalkSpeed(float Value);
 	float RoundDelta(float A,float B,float RoundHalf=180.0f);
+	void Interact(AActor* InteractActor);
+	void NotInteract(AActor* InteractActor);
 	
 private:
 	//Init
@@ -68,6 +116,10 @@ private:
 	void __SmoothPlayerTransform();
 	void __CalculateVariable();
 	void __SmoothCameraFOV();
+
+	//BeginPlay
+	void __BeginBindEvent();
+	void __BeginWidget();
 
 public:
 	//Defaults
@@ -86,6 +138,15 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	UCurveFloat* CUR_FOV;
 
+	UPROPERTY(EditDefaultsOnly)
+	UBoxComponent* BOX_View;
+
+	UPROPERTY(EditDefaultsOnly)
+	UBoxComponent* BOX_Detail;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UUW_Main> MainWidgetClass;
+	
 	//Variable
 	UPROPERTY(Replicated)
 	float Speed=0.0f;
@@ -106,8 +167,13 @@ public:
 	FRotator PlayerRotation;
 	
 	FVector CameraDelta;
-
+	
 	float ServerDeltaTime;
+	
+	TArray<AActor*> ViewActorList;
+	TArray<AActor*> DetailActorList;
+
+	UUW_Main* MainWidget;
 	
 private:
 	float LerpRotation;
