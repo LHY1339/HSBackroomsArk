@@ -36,6 +36,28 @@ public:
 	void AxisMoveRight(float Value);
 	void AxisLookUp(float Value);
 	void AxisLookRight(float Value);
+
+	//Action
+	void ActionRunPress();
+	void ActionRunRelease();
+	void ActionJumpPress();
+	void ActionJumpRelease();
+
+public:
+	//RPC
+	UFUNCTION(Server,Unreliable)
+	void UpdateVariable_Server(float newSpeed,float newDirection,float newPitch,float newYaw,FVector newPlayerLocation,FRotator newPlayerRotation);
+
+	UFUNCTION()
+	void OnRep_PlayerLocation();
+
+	UFUNCTION()
+	void OnRep_PlayerRotation();
+
+public:
+	//CallForOther
+	void SetMaxWalkSpeed(float Value);
+	float RoundDelta(float A,float B,float RoundHalf=180.0f);
 	
 private:
 	//Init
@@ -44,8 +66,11 @@ private:
 	//Tick
 	void __GetServerDeltaTime();
 	void __SmoothPlayerTransform();
+	void __CalculateVariable();
+	void __SmoothCameraFOV();
 
 public:
+	//Defaults
 	UPROPERTY(EditDefaultsOnly)
 	USkeletalMeshComponent* SK_First;
 
@@ -58,11 +83,35 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	UCameraComponent* CAM_First;
 
+	UPROPERTY(EditDefaultsOnly)
+	UCurveFloat* CUR_FOV;
+
+	//Variable
 	UPROPERTY(Replicated)
+	float Speed=0.0f;
+	
+	UPROPERTY(Replicated)
+	float Direction=0.0f;
+
+	UPROPERTY(Replicated)
+	float Pitch=0.0f;
+
+	UPROPERTY(Replicated)
+	float Yaw=0.0f;
+
+	UPROPERTY(ReplicatedUsing=OnRep_PlayerLocation)
 	FVector PlayerLocation;
 
-private:
-	float ServerDeltaTime;
+	UPROPERTY(ReplicatedUsing=OnRep_PlayerRotation)
+	FRotator PlayerRotation;
+	
+	FVector CameraDelta;
 
+	float ServerDeltaTime;
+	
+private:
+	float LerpRotation;
+	float LerpLocation;
+	
 	AMainGameStateBase* GameState;
 };
