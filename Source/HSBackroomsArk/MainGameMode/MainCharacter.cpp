@@ -65,6 +65,8 @@ void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAction("Jump",IE_Released,this,&AMainCharacter::ActionJumpRelease);
 	PlayerInputComponent->BindAction("Interact",IE_Pressed,this,&AMainCharacter::ActionInteractPress);
 	PlayerInputComponent->BindAction("Interact",IE_Released,this,&AMainCharacter::ActionInteractRelease);
+	PlayerInputComponent->BindAction("Walk",IE_Pressed,this,&AMainCharacter::ActionWalkPress);
+	PlayerInputComponent->BindAction("Walk",IE_Released,this,&AMainCharacter::ActionWalkRelease);
 }
 
 void AMainCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -138,20 +140,28 @@ void AMainCharacter::ActionJumpRelease()
 
 void AMainCharacter::ActionInteractPress()
 {
-	if (DetailActorList.Num()<=0)
+	for (int32 i=0;i<DetailActorList.Num();i++)
 	{
-		return;
+		Interact(DetailActorList[i]);
 	}
-	Interact(DetailActorList.Last());
 }
 
 void AMainCharacter::ActionInteractRelease()
 {
-	if (DetailActorList.Num()<=0)
+	for (int32 i=0;i<DetailActorList.Num();i++)
 	{
-		return;
+		NotInteract(DetailActorList[i]);
 	}
-	NotInteract(DetailActorList.Last());
+}
+
+void AMainCharacter::ActionWalkPress()
+{
+	SetMaxWalkSpeed(200.0f);
+}
+
+void AMainCharacter::ActionWalkRelease()
+{
+	SetMaxWalkSpeed(400.0f);
 }
 
 void AMainCharacter::UpdateVariable_Server_Implementation(float newSpeed, float newDirection, float newPitch,

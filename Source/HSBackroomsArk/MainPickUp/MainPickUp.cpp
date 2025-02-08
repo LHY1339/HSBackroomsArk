@@ -6,7 +6,6 @@
 #include "Components/BoxComponent.h"
 #include "HSBackroomsArk/MainGameMode/MainCharacter.h"
 #include "HSBackroomsArk/MainGameMode/Widget/UW_Main.h"
-#include "Kismet/KismetSystemLibrary.h"
 #include "Net/UnrealNetwork.h"
 
 AMainPickUp::AMainPickUp()
@@ -25,7 +24,6 @@ void AMainPickUp::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& Ou
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AMainPickUp,CanPickUp);
-	DOREPLIFETIME(AMainPickUp,CharacterList);
 }
 
 void AMainPickUp::OnView_Implementation(AMainCharacter* Character)
@@ -64,6 +62,7 @@ void AMainPickUp::OnShowDetail_Implementation(AMainCharacter* Character)
 	{
 		Character->DetailActorList.Add(this);
 		Character->MainWidget->FlushInteractList();
+		CharacterList.Add(Character);
 	}
 }
 
@@ -73,6 +72,7 @@ void AMainPickUp::OnNotShowDetail_Implementation(AMainCharacter* Character)
 	{
 		Character->DetailActorList.Remove(this);
 		Character->MainWidget->FlushInteractList();
+		CharacterList.Add(Character);
 	}
 }
 
@@ -99,11 +99,12 @@ bool AMainPickUp::GetCanShowDetail_Implementation()
 void AMainPickUp::OnInteract_Implementation(AMainCharacter* Character)
 {
 	Character->RunServer(this,1);
+	Character->MainWidget->FlushInteractList();
 }
 
 void AMainPickUp::OnNotInteract_Implementation(AMainCharacter* Character)
 {
-	Character->RunServer(this,2);
+	
 }
 
 void AMainPickUp::OnRunServer_Implementation(AMainCharacter* Character,int Function)
@@ -111,11 +112,11 @@ void AMainPickUp::OnRunServer_Implementation(AMainCharacter* Character,int Funct
 	switch (Function)
 	{
 	case 1:
-			UKismetSystemLibrary::PrintString(GetWorld(),"1");
-			break;
-		case 2:
-			UKismetSystemLibrary::PrintString(GetWorld(),"2");
-			break;
+		PickUp(Character);
+		break;
+	case 2:
+		Drop(Character);
+		break;
 	}
 }
 
@@ -124,7 +125,35 @@ void AMainPickUp::OnRunServerReliable_Implementation(AMainCharacter* Character, 
 	
 }
 
-void AMainPickUp::OnRep_CharacterList()
+bool AMainPickUp::GetCanInteract_Implementation()
+{
+	return CanPickUp;
+}
+
+void AMainPickUp::OnRep_CanPickUp()
+{
+	for (int32 i=0;i<CharacterList.Num();i++)
+	{
+		if (CharacterList[i]->IsLocallyControlled())
+		{
+			CharacterList[i]->MainWidget->FlushInteractList();
+		}
+	}
+}
+
+void AMainPickUp::PickUp(AMainCharacter* Character)
+{
+	if (!CanPickUp)
+	{
+		return;
+	}
+	CanPickUp=false;
+	AttachToComponent(Character->GetRootComponent(),FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	SM_First->SetVisibility(false);
+	SM_Third->SetVisibility(false);
+}
+
+void AMainPickUp::Drop(AMainCharacter* Character)
 {
 	
 }

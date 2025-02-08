@@ -44,11 +44,14 @@ public:
 
 	virtual void OnRunServer_Implementation(AMainCharacter* Character,int Function) override;
 	virtual void OnRunServerReliable_Implementation(AMainCharacter* Character, int Function) override;
-	
+	virtual bool GetCanInteract_Implementation() override;
 public:
 	//UFUNCTION
 	UFUNCTION()
-	void OnRep_CharacterList();
+	void OnRep_CanPickUp();
+
+	void PickUp(AMainCharacter* Character);
+	void Drop(AMainCharacter* Character);
 	
 public:
 	//Defaults
@@ -80,9 +83,8 @@ public:
 	UPROPERTY(EditAnywhere,Category="Detail")
 	FString DetailProperty;
 
-	UPROPERTY(EditAnywhere,Replicated)
+	UPROPERTY(EditAnywhere,ReplicatedUsing=OnRep_CanPickUp)
 	bool CanPickUp=true;
-
-	UPROPERTY(ReplicatedUsing=OnRep_CharacterList)
+	
 	TArray<AMainCharacter*> CharacterList;
 };

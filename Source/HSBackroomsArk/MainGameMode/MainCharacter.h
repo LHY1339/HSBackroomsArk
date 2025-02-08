@@ -46,6 +46,8 @@ public:
 	void ActionJumpRelease();
 	void ActionInteractPress();
 	void ActionInteractRelease();
+	void ActionWalkPress();
+	void ActionWalkRelease();
 	
 public:
 	//UFUNCTION

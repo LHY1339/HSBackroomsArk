@@ -20,4 +20,7 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void OnNotInteract(AMainCharacter* Character);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	bool GetCanInteract();
 };
