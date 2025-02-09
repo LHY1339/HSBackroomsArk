@@ -45,9 +45,13 @@ public:
 	void ActionJumpPress();
 	void ActionJumpRelease();
 	void ActionInteractPress();
-	void ActionInteractRelease();
 	void ActionWalkPress();
 	void ActionWalkRelease();
+	void ActionHoldFirstPress();
+	void ActionHoldSecondPress();
+	void ActionHoldThirdPress();
+	void ActionHoldFourthPress();
+
 	
 public:
 	//UFUNCTION
@@ -102,12 +106,19 @@ public:
 	UFUNCTION(Server,Reliable)
 	void RunServerReliable(AActor* RunActor,int Function);
 
+	UFUNCTION(Server,Unreliable)
+	void Interact_Server(AActor* RunActor,int32 Function);
+
+	UFUNCTION(Server,Unreliable)
+	void Hold_Server(AActor* RunActor,int32 Function);
+
 public:
 	//CallForOther
 	void SetMaxWalkSpeed(float Value);
 	float RoundDelta(float A,float B,float RoundHalf=180.0f);
 	void Interact(AActor* InteractActor);
-	void NotInteract(AActor* InteractActor);
+	virtual void OnPawnLeavingGame();
+	void Hold(int32 Index);
 	
 private:
 	//Init
@@ -167,6 +178,12 @@ public:
 
 	UPROPERTY(ReplicatedUsing=OnRep_PlayerRotation)
 	FRotator PlayerRotation;
+
+	UPROPERTY(Replicated)
+	TArray<AActor*> BagList;
+
+	UPROPERTY(Replicated)
+	AActor* HoldAsset;
 	
 	FVector CameraDelta;
 	

@@ -23,9 +23,6 @@ public:
 	UFUNCTION()
 	void Button_InteractPress();
 
-	UFUNCTION()
-	void Button_InteractRelease();
-
 	
 public:
 	UPROPERTY(meta = (BindWidget))

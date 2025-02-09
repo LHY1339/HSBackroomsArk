@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "HSBackroomsArk/Interface/IDetail.h"
+#include "HSBackroomsArk/Interface/IHold.h"
 #include "HSBackroomsArk/Interface/IInteract.h"
 #include "HSBackroomsArk/Interface/IRPC.h"
 #include "HSBackroomsArk/Interface/IView.h"
@@ -14,7 +15,7 @@ class UBoxComponent;
 class AMainCharacter;
 
 UCLASS()
-class HSBACKROOMSARK_API AMainPickUp : public AActor,public IIView,public IIDetail,public IIInteract,public IIRPC
+class HSBACKROOMSARK_API AMainPickUp : public AActor,public IIView,public IIDetail,public IIInteract,public IIRPC,public IIHold
 {
 	GENERATED_BODY()
 
@@ -40,17 +41,25 @@ public:
 	virtual bool GetCanShowDetail_Implementation() override;
 
 	virtual void OnInteract_Implementation(AMainCharacter* Character) override;
-	virtual void OnNotInteract_Implementation(AMainCharacter* Character) override;
+	virtual bool GetCanInteract_Implementation() override;
 
 	virtual void OnRunServer_Implementation(AMainCharacter* Character,int Function) override;
 	virtual void OnRunServerReliable_Implementation(AMainCharacter* Character, int Function) override;
-	virtual bool GetCanInteract_Implementation() override;
+
+	virtual void OnHold_Implementation(AMainCharacter* Character) override;
+	virtual void OnNotHold_Implementation(AMainCharacter* Character) override;
+	virtual void OnUseFirst_Implementation(AMainCharacter* Character) override;
+	virtual void OnUseSecond_Implementation(AMainCharacter* Character) override;
+	virtual void OnDrop_Implementation(AMainCharacter* Character) override;
+
 public:
 	//UFUNCTION
 	UFUNCTION()
 	void OnRep_CanPickUp();
 
-	void PickUp(AMainCharacter* Character);
+	void Interact(AMainCharacter* Character);
+	void Hold(AMainCharacter* Character);
+	void NotHold(AMainCharacter* Character);
 	void Drop(AMainCharacter* Character);
 	
 public:
@@ -83,8 +92,13 @@ public:
 	UPROPERTY(EditAnywhere,Category="Detail")
 	FString DetailProperty;
 
+	UPROPERTY(EditAnywhere)
+	FName AttachSocketName;
+
 	UPROPERTY(EditAnywhere,ReplicatedUsing=OnRep_CanPickUp)
 	bool CanPickUp=true;
 	
 	TArray<AMainCharacter*> CharacterList;
 };
+
+

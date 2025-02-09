@@ -8,7 +8,7 @@ public class HSBackroomsArk : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore","UMG","Networking" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore","UMG","Networking","Slate","SlateCore" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

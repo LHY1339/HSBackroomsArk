@@ -10,6 +10,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "HSBackroomsArk/Interface/IDetail.h"
+#include "HSBackroomsArk/Interface/IHold.h"
 #include "HSBackroomsArk/Interface/IInteract.h"
 #include "HSBackroomsArk/Interface/IRPC.h"
 #include "HSBackroomsArk/Interface/IView.h"
@@ -23,6 +24,7 @@ AMainCharacter::AMainCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	__InitComponent();
+	BagList.Init(nullptr,4);
 }
 
 void AMainCharacter::BeginPlay()
@@ -64,9 +66,12 @@ void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAction("Jump",IE_Pressed,this,&AMainCharacter::ActionJumpPress);
 	PlayerInputComponent->BindAction("Jump",IE_Released,this,&AMainCharacter::ActionJumpRelease);
 	PlayerInputComponent->BindAction("Interact",IE_Pressed,this,&AMainCharacter::ActionInteractPress);
-	PlayerInputComponent->BindAction("Interact",IE_Released,this,&AMainCharacter::ActionInteractRelease);
 	PlayerInputComponent->BindAction("Walk",IE_Pressed,this,&AMainCharacter::ActionWalkPress);
 	PlayerInputComponent->BindAction("Walk",IE_Released,this,&AMainCharacter::ActionWalkRelease);
+	PlayerInputComponent->BindAction("HoldFirst",IE_Pressed,this,&AMainCharacter::ActionHoldFirstPress);
+	PlayerInputComponent->BindAction("HoldSecond",IE_Pressed,this,&AMainCharacter::ActionHoldSecondPress);
+	PlayerInputComponent->BindAction("HoldThird",IE_Pressed,this,&AMainCharacter::ActionHoldThirdPress);
+	PlayerInputComponent->BindAction("HoldFourth",IE_Pressed,this,&AMainCharacter::ActionHoldFourthPress);
 }
 
 void AMainCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -78,6 +83,8 @@ void AMainCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>&
 	DOREPLIFETIME_CONDITION(AMainCharacter,Yaw,COND_SkipOwner);
 	DOREPLIFETIME_CONDITION(AMainCharacter,PlayerLocation,COND_SkipOwner);
 	DOREPLIFETIME_CONDITION(AMainCharacter,PlayerRotation,COND_SkipOwner);
+	DOREPLIFETIME(AMainCharacter,BagList);
+	DOREPLIFETIME(AMainCharacter,HoldAsset);
 }
 
 void AMainCharacter::AxisMoveForward(float Value)
@@ -146,14 +153,6 @@ void AMainCharacter::ActionInteractPress()
 	}
 }
 
-void AMainCharacter::ActionInteractRelease()
-{
-	for (int32 i=0;i<DetailActorList.Num();i++)
-	{
-		NotInteract(DetailActorList[i]);
-	}
-}
-
 void AMainCharacter::ActionWalkPress()
 {
 	SetMaxWalkSpeed(200.0f);
@@ -162,6 +161,26 @@ void AMainCharacter::ActionWalkPress()
 void AMainCharacter::ActionWalkRelease()
 {
 	SetMaxWalkSpeed(400.0f);
+}
+
+void AMainCharacter::ActionHoldFirstPress()
+{
+	Hold(0);
+}
+
+void AMainCharacter::ActionHoldSecondPress()
+{
+	Hold(1);
+}
+
+void AMainCharacter::ActionHoldThirdPress()
+{
+	Hold(2);
+}
+
+void AMainCharacter::ActionHoldFourthPress()
+{
+	Hold(3);
 }
 
 void AMainCharacter::UpdateVariable_Server_Implementation(float newSpeed, float newDirection, float newPitch,
@@ -263,6 +282,48 @@ void AMainCharacter::RunServerReliable_Implementation(AActor* RunActor,int Funct
 	}
 }
 
+void AMainCharacter::Interact_Server_Implementation(AActor* RunActor, int32 Function)
+{
+	IIInteract* Interface=Cast<IIInteract>(RunActor);
+	if (!Interface)
+	{
+		return;
+	}
+	switch (Function)
+	{
+		case 1:
+			Interface->Execute_OnInteract(RunActor,this);
+			break;
+	}
+}
+
+void AMainCharacter::Hold_Server_Implementation(AActor* RunActor, int32 Function)
+{
+	IIHold* Interface=Cast<IIHold>(RunActor);
+	if (!Interface)
+	{
+		return;
+	}
+	switch (Function)
+	{
+	case 1:
+		Interface->Execute_OnHold(RunActor,this);
+		break;
+	case 2:
+		Interface->Execute_OnNotHold(RunActor,this);
+		break;
+	case 3:
+		Interface->Execute_OnUseFirst(RunActor,this);
+		break;
+	case 4:
+		Interface->Execute_OnUseSecond(RunActor,this);
+		break;
+	case 5:
+		Interface->Execute_OnDrop(RunActor,this);
+		break;
+	}
+}
+
 void AMainCharacter::SetMaxWalkSpeed(float Value)
 {
 	GetCharacterMovement()->MaxWalkSpeed=Value;
@@ -280,20 +341,32 @@ float AMainCharacter::RoundDelta(float A, float B,float RoundHalf)
 
 void AMainCharacter::Interact(AActor* InteractActor)
 {
-	IIInteract* Interface=Cast<IIInteract>(InteractActor);
-	if (Interface)
-	{
-		Interface->Execute_OnInteract(InteractActor,this);
-	}
+	Interact_Server(InteractActor,1);
 }
 
-void AMainCharacter::NotInteract(AActor* InteractActor)
+void AMainCharacter::OnPawnLeavingGame()
 {
-	IIInteract* Interface=Cast<IIInteract>(InteractActor);
-	if (Interface)
+	for (int32 i=0;i<BagList.Num();i++)
 	{
-		Interface->Execute_OnNotInteract(InteractActor,this);
+		if (BagList[i])
+		{
+			IIHold* Interface=Cast<IIHold>(BagList[i]);
+			if (Interface)
+			{
+				Interface->Execute_OnDrop(BagList[i],this);
+			}
+		}
 	}
+	Destroy();
+}
+
+void AMainCharacter::Hold(int32 Index)
+{
+	if (!BagList[Index])
+	{
+		return;
+	}
+	Hold_Server(BagList[Index],1);
 }
 
 void AMainCharacter::__InitComponent()

@@ -6,6 +6,7 @@
 #include "Components/BoxComponent.h"
 #include "HSBackroomsArk/MainGameMode/MainCharacter.h"
 #include "HSBackroomsArk/MainGameMode/Widget/UW_Main.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Net/UnrealNetwork.h"
 
 AMainPickUp::AMainPickUp()
@@ -60,6 +61,7 @@ void AMainPickUp::OnShowDetail_Implementation(AMainCharacter* Character)
 {
 	if (Character->IsLocallyControlled())
 	{
+		SM_Third->SetRenderCustomDepth(true);
 		Character->DetailActorList.Add(this);
 		Character->MainWidget->FlushInteractList();
 		CharacterList.Add(Character);
@@ -70,6 +72,7 @@ void AMainPickUp::OnNotShowDetail_Implementation(AMainCharacter* Character)
 {
 	if (Character->IsLocallyControlled())
 	{
+		SM_Third->SetRenderCustomDepth(false);
 		Character->DetailActorList.Remove(this);
 		Character->MainWidget->FlushInteractList();
 		CharacterList.Add(Character);
@@ -98,26 +101,12 @@ bool AMainPickUp::GetCanShowDetail_Implementation()
 
 void AMainPickUp::OnInteract_Implementation(AMainCharacter* Character)
 {
-	Character->RunServer(this,1);
-	Character->MainWidget->FlushInteractList();
-}
-
-void AMainPickUp::OnNotInteract_Implementation(AMainCharacter* Character)
-{
-	
+	Interact(Character);
 }
 
 void AMainPickUp::OnRunServer_Implementation(AMainCharacter* Character,int Function)
 {
-	switch (Function)
-	{
-	case 1:
-		PickUp(Character);
-		break;
-	case 2:
-		Drop(Character);
-		break;
-	}
+	
 }
 
 void AMainPickUp::OnRunServerReliable_Implementation(AMainCharacter* Character, int Function)
@@ -128,6 +117,48 @@ void AMainPickUp::OnRunServerReliable_Implementation(AMainCharacter* Character, 
 bool AMainPickUp::GetCanInteract_Implementation()
 {
 	return CanPickUp;
+}
+
+void AMainPickUp::OnHold_Implementation(AMainCharacter* Character)
+{
+	if (!Character->HoldAsset)
+	{
+		Hold(Character);
+		return;
+	}
+	IIHold* Interface=Cast<IIHold>(Character->HoldAsset);
+	if (!Interface)
+	{
+		Hold(Character);
+		return;
+	}
+	if (Character->HoldAsset==this)
+	{
+		Interface->Execute_OnNotHold(Character->HoldAsset,Character);
+		return;
+	}
+	Interface->Execute_OnNotHold(Character->HoldAsset,Character);
+	Hold(Character);
+}
+
+void AMainPickUp::OnNotHold_Implementation(AMainCharacter* Character)
+{
+	NotHold(Character);
+}
+
+void AMainPickUp::OnUseFirst_Implementation(AMainCharacter* Character)
+{
+
+}
+
+void AMainPickUp::OnUseSecond_Implementation(AMainCharacter* Character)
+{
+
+}
+
+void AMainPickUp::OnDrop_Implementation(AMainCharacter* Character)
+{
+	Drop(Character);
 }
 
 void AMainPickUp::OnRep_CanPickUp()
@@ -141,19 +172,61 @@ void AMainPickUp::OnRep_CanPickUp()
 	}
 }
 
-void AMainPickUp::PickUp(AMainCharacter* Character)
+void AMainPickUp::Interact(AMainCharacter* Character)
 {
 	if (!CanPickUp)
 	{
 		return;
 	}
-	CanPickUp=false;
-	AttachToComponent(Character->GetRootComponent(),FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	for (int32 i=0;i<Character->BagList.Num();i++)
+	{
+		if (!Character->BagList[i])
+		{
+			SetOwner(Character);
+			CanPickUp=false;
+			AttachToComponent(Character->GetMesh(),FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+			SM_First->SetVisibility(false);
+			SM_Third->SetVisibility(false);
+			Character->BagList[i]=this;
+			break;
+		}
+	}
+	if (Character->IsLocallyControlled())
+	{
+		Character->MainWidget->FlushInteractList();
+	}
+}
+
+void AMainPickUp::Hold(AMainCharacter* Character)
+{
+	SM_First->AttachToComponent(Character->SK_First,FAttachmentTransformRules::SnapToTargetNotIncludingScale,AttachSocketName);
+	SM_Third->AttachToComponent(Character->SK_Third,FAttachmentTransformRules::SnapToTargetNotIncludingScale,AttachSocketName);
+	SM_First->SetVisibility(true);
+	SM_Third->SetVisibility(true);
+	Character->HoldAsset=this;
+}
+
+void AMainPickUp::NotHold(AMainCharacter* Character)
+{
+	SM_First->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	SM_Third->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 	SM_First->SetVisibility(false);
 	SM_Third->SetVisibility(false);
+	Character->HoldAsset=nullptr;
 }
 
 void AMainPickUp::Drop(AMainCharacter* Character)
 {
-	
+	SetOwner(nullptr);
+	DetachFromActor(FDetachmentTransformRules(EDetachmentRule::KeepRelative,true));
+	SM_First->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	SM_Third->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	SM_First->SetVisibility(true);
+	SM_Third->SetVisibility(true);
+	Character->BagList[Character->BagList.Find(this)]=nullptr;
+	CanPickUp=true;
+	if (Character->IsLocallyControlled())
+	{
+		Character->MainWidget->FlushInteractList();
+	}
 }

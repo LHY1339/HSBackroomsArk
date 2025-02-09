@@ -3,6 +3,7 @@
 
 #include "UW_Main.h"
 
+#include "UW_Bag.h"
 #include "Components/ScrollBox.h"
 #include "HSBackroomsArk/Interface/IDetail.h"
 #include "HSBackroomsArk/MainGameMode/MainCharacter.h"
@@ -30,4 +31,14 @@ void UUW_Main::FlushInteractList()
 			}
 		}
 	}
+}
+
+void UUW_Main::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	UMG_Bag_First->MainWidget=this;
+	UMG_Bag_Second->MainWidget=this;
+	UMG_Bag_Third->MainWidget=this;
+	UMG_Bag_Fourth->MainWidget=this;
 }
