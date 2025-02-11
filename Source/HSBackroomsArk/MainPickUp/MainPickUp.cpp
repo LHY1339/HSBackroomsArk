@@ -13,13 +13,21 @@ AMainPickUp::AMainPickUp()
 {
 	BOX_Collision=CreateDefaultSubobject<UBoxComponent>("BOX_Collision");
 	SetRootComponent(BOX_Collision);
+	bReplicates=true;
+	SetReplicateMovement(true);
 
 	SM_Third=CreateDefaultSubobject<UStaticMeshComponent>("SM_Third");
 	SM_Third->SetupAttachment(RootComponent);
 	SM_Third->CustomDepthStencilValue=1;
+	SM_Third->bOwnerNoSee=true;
+	SM_Third->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SM_Third->SetIsReplicated(true);
 
 	SM_First=CreateDefaultSubobject<UStaticMeshComponent>("SM_First");
 	SM_First->SetupAttachment(RootComponent);
+	SM_First->bOnlyOwnerSee=true;
+	SM_First->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SM_First->SetIsReplicated(true);
 }
 
 void AMainPickUp::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
