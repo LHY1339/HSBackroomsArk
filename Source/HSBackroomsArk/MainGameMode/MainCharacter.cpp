@@ -72,6 +72,8 @@ void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAction("HoldSecond",IE_Pressed,this,&AMainCharacter::ActionHoldSecondPress);
 	PlayerInputComponent->BindAction("HoldThird",IE_Pressed,this,&AMainCharacter::ActionHoldThirdPress);
 	PlayerInputComponent->BindAction("HoldFourth",IE_Pressed,this,&AMainCharacter::ActionHoldFourthPress);
+	PlayerInputComponent->BindAction("UseFirst",IE_Pressed,this,&AMainCharacter::ActionUseFirstPress);
+	PlayerInputComponent->BindAction("UseSecond",IE_Pressed,this,&AMainCharacter::ActionUseSecondPress);
 }
 
 void AMainCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -181,6 +183,32 @@ void AMainCharacter::ActionHoldThirdPress()
 void AMainCharacter::ActionHoldFourthPress()
 {
 	Hold(3);
+}
+
+void AMainCharacter::ActionUseFirstPress()
+{
+	if (!HoldAsset)
+	{
+		return;
+	}
+	IIHold* Interface=Cast<IIHold>(HoldAsset);
+	if(Interface)
+	{
+		Interface->Execute_OnUseFirst(HoldAsset,this);
+	}
+}
+
+void AMainCharacter::ActionUseSecondPress()
+{
+	if (!HoldAsset)
+	{
+		return;
+	}
+	IIHold* Interface=Cast<IIHold>(HoldAsset);
+	if(Interface)
+	{
+		Interface->Execute_OnUseSecond(HoldAsset,this);
+	}
 }
 
 void AMainCharacter::UpdateVariable_Server_Implementation(float newSpeed, float newDirection, float newPitch,

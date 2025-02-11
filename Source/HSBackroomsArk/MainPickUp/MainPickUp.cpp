@@ -16,6 +16,7 @@ AMainPickUp::AMainPickUp()
 
 	SM_Third=CreateDefaultSubobject<UStaticMeshComponent>("SM_Third");
 	SM_Third->SetupAttachment(RootComponent);
+	SM_Third->CustomDepthStencilValue=1;
 
 	SM_First=CreateDefaultSubobject<UStaticMeshComponent>("SM_First");
 	SM_First->SetupAttachment(RootComponent);

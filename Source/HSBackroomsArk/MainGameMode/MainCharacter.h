@@ -51,6 +51,8 @@ public:
 	void ActionHoldSecondPress();
 	void ActionHoldThirdPress();
 	void ActionHoldFourthPress();
+	void ActionUseFirstPress();
+	void ActionUseSecondPress();
 
 	
 public:
