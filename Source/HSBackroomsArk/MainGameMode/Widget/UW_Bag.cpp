@@ -23,10 +23,12 @@ void UUW_Bag::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 		if (MainWidget->Character->BagList[BagIndex]==MainWidget->Character->HoldAsset)
 		{
 			Image_Icon->SetRenderOpacity(1.0f);
+			Image_Icon->SetRenderScale(FVector2D(1.2,1.2));
 		}
 		else
 		{
 			Image_Icon->SetRenderOpacity(0.5f);
+			Image_Icon->SetRenderScale(FVector2D(0.8,0.8));
 		}
 	}
 	else

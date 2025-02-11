@@ -36,6 +36,7 @@ void UMainAnimInstance::NativeUpdateAnimation(float DeltaTime)
 
 	CameraDelta=Character->CameraDelta;
 	Yaw = Character->Yaw;
+	HoldAsset=Character->HoldAsset;
 }
 
 void UMainAnimInstance::__CalculateSmooth()

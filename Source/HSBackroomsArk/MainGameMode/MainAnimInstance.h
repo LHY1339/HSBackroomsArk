@@ -34,6 +34,12 @@ public:
 
 	UPROPERTY(BlueprintReadOnly)
 	FVector CameraDelta;
+
+	UPROPERTY(BlueprintReadOnly)
+	AActor* HoldAsset;
+
+	UPROPERTY(BlueprintReadOnly,EditAnywhere)
+	UAnimationAsset* AnimationAsset;
 	
 private:
 	AMainCharacter* Character;

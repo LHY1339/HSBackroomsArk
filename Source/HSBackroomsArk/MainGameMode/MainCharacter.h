@@ -185,6 +185,10 @@ public:
 	UPROPERTY(Replicated)
 	AActor* HoldAsset;
 	
+	float HP=100.0f;
+	float SAN=100.0f;
+	float Energy=0.0f;
+	
 	FVector CameraDelta;
 	
 	float ServerDeltaTime;
