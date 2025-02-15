@@ -16,9 +16,15 @@ class HSBACKROOMSARK_API UMainAnimInstance : public UAnimInstance
 public:
 	virtual void NativeUpdateAnimation(float DeltaTime) override;
 
+	UFUNCTION(BlueprintCallable)
+	void AnimNotify_LeftStep(UAnimNotify* Notify);
+
+	UFUNCTION(BlueprintCallable)
+	void AnimNotify_RightStep(UAnimNotify* Notify);
+	
 private:
 	void __CalculateSmooth();
-	
+	void __StepNotify(FName Socket);
 public:
 	UPROPERTY(BlueprintReadOnly)
 	float Speed=0.0f;
@@ -38,8 +44,8 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	AActor* HoldAsset;
 
-	UPROPERTY(BlueprintReadOnly,EditAnywhere)
-	UAnimationAsset* AnimationAsset;
+	UPROPERTY(BlueprintReadOnly)
+	bool IsCrouch=0.0f;
 	
 private:
 	AMainCharacter* Character;

@@ -2,9 +2,8 @@
 
 
 #include "MainAnimInstance.h"
-
 #include "MainCharacter.h"
-#include "Chaos/PBDSuspensionConstraintData.h"
+#include "HSBackroomsArk/Physical/MainStepPhysicalMaterial.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
 
@@ -37,6 +36,17 @@ void UMainAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	CameraDelta=Character->CameraDelta;
 	Yaw = Character->Yaw;
 	HoldAsset=Character->HoldAsset;
+	IsCrouch=Character->IsCrouch;
+}
+
+void UMainAnimInstance::AnimNotify_LeftStep(UAnimNotify* Notify)
+{
+	__StepNotify("foot_l");
+}
+
+void UMainAnimInstance::AnimNotify_RightStep(UAnimNotify* Notify)
+{
+	__StepNotify("foot_r");
 }
 
 void UMainAnimInstance::__CalculateSmooth()
@@ -44,4 +54,58 @@ void UMainAnimInstance::__CalculateSmooth()
 	LerpSpeed = UKismetMathLibrary::Abs(Speed - Character->Speed) * (1.0f / Character->ServerDeltaTime);
 	LerpDirection = Character->RoundDelta(Direction, Character->Direction) * (1.0f / Character->ServerDeltaTime);
 	LerpPitch = UKismetMathLibrary::Abs(Pitch - Character->Pitch) * (1.0f / Character->ServerDeltaTime);
+}
+
+void UMainAnimInstance::__StepNotify(FName Socket)
+{
+	if (!Character)
+	{
+		Character=Cast<AMainCharacter>(TryGetPawnOwner());
+		return;
+	}
+	FVector start;
+	if (GetOwningComponent()->ComponentHasTag("FPP"))
+	{
+		if (!Character->IsLocallyControlled())
+		{
+			return;
+		}
+		start=Character->SK_First->GetSocketLocation(Socket);
+	}
+	if (GetOwningComponent()->ComponentHasTag("TPP"))
+	{
+		if (Character->IsLocallyControlled())
+		{
+			return;
+		}
+		start=Character->SK_Third->GetSocketLocation(Socket);
+	}
+	FHitResult hit;
+	UKismetSystemLibrary::LineTraceSingle(
+		GetWorld(),
+		start+FVector(0.0f,0.0f,50.0f),
+		start-FVector(0.0f,0.0f,50.0f),
+		TraceTypeQuery1,
+		false,
+		TArray<AActor*>(),
+		EDrawDebugTrace::ForDuration,
+		hit,
+		true
+		);
+	
+	if (!hit.bBlockingHit)
+	{
+		return;
+	}
+	UMainStepPhysicalMaterial* phymat=Cast<UMainStepPhysicalMaterial>(hit.PhysMaterial);
+	if (!phymat||!phymat->StepSound)
+	{
+		return;
+	}
+	UGameplayStatics::PlaySoundAtLocation(
+	GetWorld(),
+	phymat->StepSound,
+	Character->GetActorLocation(),
+	Character->GetActorRotation()
+	);
 }

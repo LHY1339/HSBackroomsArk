@@ -45,8 +45,7 @@ public:
 	void ActionJumpPress();
 	void ActionJumpRelease();
 	void ActionInteractPress();
-	void ActionWalkPress();
-	void ActionWalkRelease();
+	void ActionCrouchPress();
 	void ActionHoldFirstPress();
 	void ActionHoldSecondPress();
 	void ActionHoldThirdPress();
@@ -58,7 +57,7 @@ public:
 public:
 	//UFUNCTION
 	UFUNCTION(Server,Unreliable)
-	void UpdateVariable_Server(float newSpeed,float newDirection,float newPitch,float newYaw,FVector newPlayerLocation,FRotator newPlayerRotation);
+	void UpdateVariable_Server(float newSpeed,float newDirection,float newPitch,float newYaw,FVector newPlayerLocation,FRotator newPlayerRotation,bool newIsCrouch);
 
 	UFUNCTION()
 	void OnRep_PlayerLocation();
@@ -113,7 +112,6 @@ public:
 
 	UFUNCTION(Server,Unreliable)
 	void Hold_Server(AActor* RunActor,int32 Function);
-
 public:
 	//CallForOther
 	void SetMaxWalkSpeed(float Value);
@@ -186,6 +184,9 @@ public:
 
 	UPROPERTY(Replicated)
 	AActor* HoldAsset;
+
+	UPROPERTY(Replicated)
+	bool IsCrouch;
 	
 	float HP=100.0f;
 	float SAN=100.0f;

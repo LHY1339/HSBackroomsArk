@@ -7,6 +7,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/BoxComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "HSBackroomsArk/Interface/IDetail.h"
@@ -41,7 +42,7 @@ void AMainCharacter::Tick(float DeltaTime)
 	if (IsLocallyControlled())
 	{
 		__CalculateVariable();
-		UpdateVariable_Server(Speed,Direction,Pitch,Yaw,PlayerLocation,PlayerRotation);
+		UpdateVariable_Server(Speed,Direction,Pitch,Yaw,PlayerLocation,PlayerRotation,IsCrouch);
 		__SmoothCameraFOV();
 	}
 	else
@@ -66,8 +67,7 @@ void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAction("Jump",IE_Pressed,this,&AMainCharacter::ActionJumpPress);
 	PlayerInputComponent->BindAction("Jump",IE_Released,this,&AMainCharacter::ActionJumpRelease);
 	PlayerInputComponent->BindAction("Interact",IE_Pressed,this,&AMainCharacter::ActionInteractPress);
-	PlayerInputComponent->BindAction("Walk",IE_Pressed,this,&AMainCharacter::ActionWalkPress);
-	PlayerInputComponent->BindAction("Walk",IE_Released,this,&AMainCharacter::ActionWalkRelease);
+	PlayerInputComponent->BindAction("Crouch",IE_Pressed,this,&AMainCharacter::ActionCrouchPress);
 	PlayerInputComponent->BindAction("HoldFirst",IE_Pressed,this,&AMainCharacter::ActionHoldFirstPress);
 	PlayerInputComponent->BindAction("HoldSecond",IE_Pressed,this,&AMainCharacter::ActionHoldSecondPress);
 	PlayerInputComponent->BindAction("HoldThird",IE_Pressed,this,&AMainCharacter::ActionHoldThirdPress);
@@ -85,6 +85,7 @@ void AMainCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>&
 	DOREPLIFETIME_CONDITION(AMainCharacter,Yaw,COND_SkipOwner);
 	DOREPLIFETIME_CONDITION(AMainCharacter,PlayerLocation,COND_SkipOwner);
 	DOREPLIFETIME_CONDITION(AMainCharacter,PlayerRotation,COND_SkipOwner);
+	DOREPLIFETIME_CONDITION(AMainCharacter,IsCrouch,COND_SkipOwner);
 	DOREPLIFETIME(AMainCharacter,BagList);
 	DOREPLIFETIME(AMainCharacter,HoldAsset);
 }
@@ -155,14 +156,18 @@ void AMainCharacter::ActionInteractPress()
 	}
 }
 
-void AMainCharacter::ActionWalkPress()
+void AMainCharacter::ActionCrouchPress()
 {
-	SetMaxWalkSpeed(200.0f);
-}
-
-void AMainCharacter::ActionWalkRelease()
-{
-	SetMaxWalkSpeed(400.0f);
+	if (IsCrouch)
+	{
+		GetCapsuleComponent()->SetCapsuleHalfHeight(90.0f);
+		IsCrouch=false;
+	}
+	else
+	{
+		GetCapsuleComponent()->SetCapsuleHalfHeight(60.0f);
+		IsCrouch=true;
+	}
 }
 
 void AMainCharacter::ActionHoldFirstPress()
@@ -212,7 +217,8 @@ void AMainCharacter::ActionUseSecondPress()
 }
 
 void AMainCharacter::UpdateVariable_Server_Implementation(float newSpeed, float newDirection, float newPitch,
-                                                          float newYaw,FVector newPlayerLocation,FRotator newPlayerRotation)
+                                                          float newYaw,FVector newPlayerLocation,FRotator newPlayerRotation
+                                                          ,bool newIsCrouch)
 {
 	Speed=newSpeed;
 	Direction=newDirection;
@@ -220,6 +226,7 @@ void AMainCharacter::UpdateVariable_Server_Implementation(float newSpeed, float 
 	Yaw=newYaw;
 	PlayerLocation=newPlayerLocation;
 	PlayerRotation=newPlayerRotation;
+	IsCrouch=newIsCrouch;
 }
 
 void AMainCharacter::OnRep_PlayerLocation()
